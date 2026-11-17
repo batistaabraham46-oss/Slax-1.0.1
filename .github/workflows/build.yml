@@ -1,0 +1,38 @@
+name: Build Slax
+
+# Runs on every upload (push) and whenever you click "Run workflow" on the Actions tab.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Slax-Windows
+          - os: macos-latest
+            name: Slax-macOS
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Configure (downloads JUCE the first time)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package VST3 (+ AU on macOS) and the standalone app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            build/Slax_artefacts/Release/VST3
+            build/Slax_artefacts/Release/AU
+            build/Slax_artefacts/Release/Standalone
+          if-no-files-found: error
